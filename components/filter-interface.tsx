@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@radix-ui/react-select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChevronDown, Plus, Search, X, ChevronRight } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
@@ -13,7 +13,7 @@ import { useFilters, type Filter } from "@/hooks/use-filters"
 import { mockData, type DataRow } from "@/lib/mock-data"
 
 interface FilterInterfaceProps {
-  onApplyFilters: (filters: any[], operator: "and" | "or") => void;
+  onApplyFilters: (filters: Filter[], operator: "and" | "or") => void;
 }
 
 export default function FilterInterface({ onApplyFilters }: FilterInterfaceProps) {
@@ -33,34 +33,17 @@ export default function FilterInterface({ onApplyFilters }: FilterInterfaceProps
   const [dimensionValues, setDimensionValues] = useState<string[]>([])
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
-  // Extract unique tag values from mock data
-  const getTagValues = (category: string) => {
-    const values = new Set<string>()
+  // Get unique values for each dimension from mock data
+  const getDimensionValues = (dimension: string): string[] => {
+    const values = new Set<string>();
     mockData.forEach((row: DataRow) => {
-      if (row.tags !== "N/A") {
-        const tags = row.tags.split(';')
-        tags.forEach((tag: string) => {
-          const [key, value] = tag.split(':')
-          if (key && value && key.trim() === category) {
-            values.add(value.trim())
-          }
-        })
+      const value = row[dimension as keyof DataRow];
+      if (typeof value === 'string') {
+        values.add(value);
       }
-    })
-    return Array.from(values)
-  }
-
-  // Extract unique dimension values from mock data
-  const getDimensionValues = (dimension: string) => {
-    const values = new Set<string>()
-    mockData.forEach((row: DataRow) => {
-      const value = row[dimension.toLowerCase().replace(/ /g, '_') as keyof DataRow]
-      if (value !== undefined && value !== null) {
-        values.add(String(value))
-      }
-    })
-    return Array.from(values)
-  }
+    });
+    return Array.from(values);
+  };
 
   const handleSelectAllChange = (checked: boolean) => {
     setSelectAll(checked)
@@ -270,20 +253,21 @@ export default function FilterInterface({ onApplyFilters }: FilterInterfaceProps
     : metrics
 
   const handleApplyFilters = () => {
-    const filtersToApply = [];
+    const filtersToApply: Filter[] = [];
     if (selectedMetric && selectedOperator && metricValue) {
       filtersToApply.push({
-        type: "metric",
-        metric: selectedMetric,
+        type: selectedMetric.toLowerCase().replace(/ /g, '_') as Filter['type'],
         operator: selectedOperator,
-        value: metricValue,
+        value: parseFloat(metricValue) || metricValue,
+        filterOperator
       });
     }
     if (selectedDimension && selectedDimensionValues.length > 0) {
       filtersToApply.push({
-        type: "dimension",
-        dimension: selectedDimension,
-        values: selectedDimensionValues,
+        type: selectedDimension.toLowerCase().replace(/ /g, '_') as Filter['type'],
+        operator: 'is',
+        value: selectedDimensionValues,
+        filterOperator
       });
     }
     onApplyFilters(filtersToApply, filterOperator);
