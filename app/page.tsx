@@ -3,6 +3,11 @@ import SegwiseLogo from "@/components/segwise-logo"
 import DataTable from "@/components/data-table"
 
 export default function Home() {
+  const handleApplyFilters = (filters: any[], operator: "and" | "or") => {
+    // Handle filters here
+    console.log({ filters, operator });
+  };
+
   return (
     <main className="min-h-screen bg-white p-6">
       <div className="relative max-w-6xl mx-auto">
@@ -18,7 +23,7 @@ export default function Home() {
 
         {/* Main content */}
         <div className="border border-dashed border-[#d9d9d9] rounded-lg p-6 mb-8">
-          <FilterInterface />
+          <FilterInterface onApplyFilters={handleApplyFilters} />
           <div className="mt-6">
             <DataTable />
           </div>
