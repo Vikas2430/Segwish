@@ -15,7 +15,6 @@ import { mockData, type DataRow } from "@/lib/mock-data"
 export default function FilterInterface() {
   const { activeFilters, addFilter, clearFilters } = useFilters()
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false)
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [selectedMetric, setSelectedMetric] = useState<string>("")
   const [metricValue, setMetricValue] = useState<string>("")
   const [operator, setOperator] = useState<"equals" | "less_than" | "greater_than">("equals")
@@ -266,7 +265,7 @@ export default function FilterInterface() {
     : metrics
 
   const handleApplyFilters = () => {
-    let filtersToApply = [...selectedFilters]
+    const filtersToApply = [...selectedFilters]
 
     // Update metric filter if metric is selected and has a value
     if (selectedMetric && metricValue) {

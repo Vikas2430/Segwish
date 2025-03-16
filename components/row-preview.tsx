@@ -1,35 +1,35 @@
 "use client"
 
 import { X } from "lucide-react"
+import { DataRow } from "@/lib/mock-data"
 
 interface RowPreviewProps {
-  row: any
-  onClick: () => void
+  row: DataRow;
+  onClick: () => void;
 }
 
 export default function RowPreview({ row, onClick }: RowPreviewProps) {
   return (
-    <div
-      className="fixed bottom-4 right-4 w-64 bg-white rounded-md shadow-lg border border-[#d9d9d9] overflow-hidden z-50 cursor-pointer"
-      onClick={onClick}
-    >
-      <div className="flex items-center justify-between bg-[#f8fafb] p-3 border-b border-[#f2f4f8]">
-        <h3 className="font-medium text-sm">Row #{row.id}</h3>
-        <X className="h-4 w-4 text-[#757575] hover:text-[#292d32]" />
+    <div className="fixed bottom-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-sm w-full border border-gray-200">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold">Creative ID: {row.creative_id}</h3>
+        <button onClick={onClick} className="text-gray-500 hover:text-gray-700">
+          <X className="h-4 w-4" />
+        </button>
       </div>
-      <div className="p-3">
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="text-[#757575]">Character:</div>
-          <div>{row.character}</div>
-
-          <div className="text-[#757575]">Background:</div>
-          <div>{row.background}</div>
-
-          <div className="text-[#757575]">Spends:</div>
-          <div>{row.spends}</div>
+      <div className="space-y-2">
+        <div>
+          <span className="text-sm text-gray-500">Creative Name:</span>
+          <p className="text-sm">{row.creative_name}</p>
         </div>
-
-        <div className="mt-2 text-xs text-[#97cf35] text-center">Click to view full details</div>
+        <div>
+          <span className="text-sm text-gray-500">Campaign:</span>
+          <p className="text-sm">{row.campaign}</p>
+        </div>
+        <div>
+          <span className="text-sm text-gray-500">Spend:</span>
+          <p className="text-sm">${row.spend.toFixed(2)}</p>
+        </div>
       </div>
     </div>
   )
