@@ -12,21 +12,26 @@ import { cn } from "@/lib/utils"
 import { useFilters, type Filter } from "@/hooks/use-filters"
 import { mockData, type DataRow } from "@/lib/mock-data"
 
-export default function FilterInterface() {
+interface FilterInterfaceProps {
+  onApplyFilters: (filters: any[], operator: "and" | "or") => void;
+}
+
+export default function FilterInterface({ onApplyFilters }: FilterInterfaceProps) {
   const { activeFilters, addFilter, clearFilters } = useFilters()
   const [isFilterOpen, setIsFilterOpen] = useState<boolean>(false)
   const [selectedMetric, setSelectedMetric] = useState<string>("")
+  const [selectedDimension, setSelectedDimension] = useState<string>("")
+  const [selectedOperator, setSelectedOperator] = useState<"equals" | "less_than" | "greater_than">("equals")
   const [metricValue, setMetricValue] = useState<string>("")
-  const [operator, setOperator] = useState<"equals" | "less_than" | "greater_than">("equals")
+  const [filterOperator, setFilterOperator] = useState<"and" | "or">("and")
+  const [selectedDimensionValues, setSelectedDimensionValues] = useState<string[]>([])
   const [selectedFilters, setSelectedFilters] = useState<Filter[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [valueSearchTerm, setValueSearchTerm] = useState("")
   const [selectedValues, setSelectedValues] = useState<string[]>([])
   const [selectAll, setSelectAll] = useState(false)
-  const [selectedDimension, setSelectedDimension] = useState<string>("")
   const [dimensionValues, setDimensionValues] = useState<string[]>([])
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [filterOperator, setFilterOperator] = useState<"and" | "or">("and")
 
   // Extract unique tag values from mock data
   const getTagValues = (category: string) => {
@@ -177,14 +182,14 @@ export default function FilterInterface() {
     if (existingFilterIndex === -1) {
       setSelectedFilters([...selectedFilters, {
         type: metricType as Filter['type'],
-        operator,
+        operator: selectedOperator,
         value: metricValue || ''
       }])
     }
   }
 
   const handleOperatorChange = (newOperator: "equals" | "less_than" | "greater_than") => {
-    setOperator(newOperator);
+    setSelectedOperator(newOperator);
     // Remove the automatic filter update
     if (selectedMetric) {
       const metricType = selectedMetric.toLowerCase().replace(/ /g, '_');
@@ -205,24 +210,24 @@ export default function FilterInterface() {
         ['spend', 'impressions', 'clicks', 'installs', 'ipm', 'ctr', 'cpm', 'cost_per_click', 'cost_per_install'].includes(f.type)
       )
       
-    if (existingFilterIndex !== -1) {
-      const newFilters = [...selectedFilters]
+      if (existingFilterIndex !== -1) {
+        const newFilters = [...selectedFilters]
         if (value) {
-      newFilters[existingFilterIndex] = {
+          newFilters[existingFilterIndex] = {
             type: metricType as Filter['type'],
-        operator,
-        value
+            operator: selectedOperator,
+            value
           }
         } else {
           newFilters.splice(existingFilterIndex, 1)
-      }
-      setSelectedFilters(newFilters)
-    } else if (value) {
-      setSelectedFilters([...selectedFilters, {
+        }
+        setSelectedFilters(newFilters)
+      } else if (value) {
+        setSelectedFilters([...selectedFilters, {
           type: metricType as Filter['type'],
-        operator,
-        value
-      }])
+          operator: selectedOperator,
+          value
+        }])
       }
     }
   }
@@ -265,84 +270,24 @@ export default function FilterInterface() {
     : metrics
 
   const handleApplyFilters = () => {
-    const filtersToApply = [...selectedFilters]
-
-    // Update metric filter if metric is selected and has a value
-    if (selectedMetric && metricValue) {
-      const metricType = selectedMetric.toLowerCase().replace(/ /g, '_') as Filter['type']
-      let value = metricValue
-      
-      // Convert percentage values to decimal for IPM and CTR
-      if (selectedMetric === "IPM" || selectedMetric === "CTR") {
-        value = (parseFloat(metricValue) / 100).toString()
-      }
-      
-      const existingFilterIndex = filtersToApply.findIndex(f => f.type === metricType)
-      if (existingFilterIndex !== -1) {
-        filtersToApply[existingFilterIndex] = {
-          type: metricType,
-          operator,
-          value,
-          filterOperator
-        }
-      } else {
-        filtersToApply.push({
-          type: metricType,
-          operator,
-          value,
-          filterOperator
-        })
-      }
+    const filtersToApply = [];
+    if (selectedMetric && selectedOperator && metricValue) {
+      filtersToApply.push({
+        type: "metric",
+        metric: selectedMetric,
+        operator: selectedOperator,
+        value: metricValue,
+      });
     }
-
-    // Apply all filters
-    filtersToApply.forEach(filter => {
-      // Only apply filters with values
-      if (filter.value) {
-        if (Array.isArray(filter.value)) {
-          if (filter.value.length > 0) {
-            // For dimension filters, pass the array directly
-            const dimensionTypes = ['creative_name', 'country', 'ad_network', 'os', 'ad_group', 'campaign']
-            if (dimensionTypes.includes(filter.type)) {
-              addFilter({
-                ...filter,
-                value: filter.value,
-                filterOperator
-              })
-            } else {
-              addFilter({
-                ...filter,
-                filterOperator
-              })
-            }
-          }
-        } else if (typeof filter.value === 'string') {
-          if (filter.value.trim() !== '') {
-            addFilter({
-              ...filter,
-              filterOperator
-            })
-          }
-        } else {
-          // For numeric values
-          addFilter({
-            ...filter,
-            filterOperator
-          })
-        }
-      }
-    })
-
-    // Reset states
-    setIsFilterOpen(false)
-    setSelectedFilters([])
-    setMetricValue("")
-    setOperator("equals")
-    setSelectedMetric("")
-    setSelectedDimension("")
-    setSelectedValues([])
-    setSelectAll(false)
-    setFilterOperator("and")
+    if (selectedDimension && selectedDimensionValues.length > 0) {
+      filtersToApply.push({
+        type: "dimension",
+        dimension: selectedDimension,
+        values: selectedDimensionValues,
+      });
+    }
+    onApplyFilters(filtersToApply, filterOperator);
+    setIsFilterOpen(false);
   }
 
   // Update the display of active filters
@@ -482,12 +427,12 @@ export default function FilterInterface() {
                       <div className="p-3 border-b border-[#E5E7EB]">
                         <div className="flex items-center gap-2">
                           <div className="w-[120px] shrink-0">
-                            <Select value={operator} onValueChange={(value: "equals" | "less_than" | "greater_than") => handleOperatorChange(value)}>
+                            <Select value={selectedOperator} onValueChange={(value: "equals" | "less_than" | "greater_than") => handleOperatorChange(value)}>
                               <SelectTrigger className="h-9 px-3 bg-white border-[#E5E7EB] text-sm focus:ring-1 focus:ring-[#6366F1] focus:border-[#6366F1] flex items-center justify-between">
                                 <SelectValue placeholder="Operator">
-                                  {operator === 'equals' ? 'Equals' :
-                                   operator === 'less_than' ? 'Lesser than' :
-                                   operator === 'greater_than' ? 'Greater than' : ''}
+                                  {selectedOperator === 'equals' ? 'Equals' :
+                                   selectedOperator === 'less_than' ? 'Lesser than' :
+                                   selectedOperator === 'greater_than' ? 'Greater than' : ''}
                                 </SelectValue>
                                 <ChevronDown className="h-4 w-4 opacity-50" />
                               </SelectTrigger>
